@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: http-inspect
+  namespace: default
+  labels:
+    app: http-inspect
+spec:
+  nodeName: tyfun-k3s-m1
+  restartPolicy: Always
+  containers:
+  - name: http-inspect
+    image: vpburchenya/http-inspect
+    imagePullPolicy: Always
+

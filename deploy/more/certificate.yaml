@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: http-inspect
+  namespace: default
+spec:
+  dnsNames:
+    - http-inspect.oz.net.ru
+  secretName: tls-http-inspect-cert
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+
