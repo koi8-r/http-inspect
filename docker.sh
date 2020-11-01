@@ -3,6 +3,6 @@
 
 unset DOCKER_HOST
 
-docker build -t vpburchenya/http-inspect .
-docker push vpburchenya/http-inspect
+docker build -t vpburchenya/http-inspect:v1.1 .
+docker push vpburchenya/http-inspect:v1.1
 

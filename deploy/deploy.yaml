@@ -1,3 +1,14 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: http-inspect-logs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -16,18 +27,51 @@ spec:
       labels:
         app: http-inspect
     spec:
+      volumes:
+      - name: http-inspect-logs
+        persistentVolumeClaim:
+          claimName: http-inspect-logs-pvc
+      - name: http-inspect-cfg
+        configMap:
+          name: http-inspect-cfg
       containers:
       - name: http-inspect
-        image: vpburchenya/http-inspect:latest
+        image: vpburchenya/http-inspect:v1.1
         imagePullPolicy: Always
         env:
         - name: HOST_IP
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+        volumeMounts:
+        - name: http-inspect-cfg
+          mountPath: /usr/local/app/conf
         ports:
         - containerPort: 8090
           protocol: TCP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: http-inspect-cfg
+  namespace: default
+data:
+  logging.yaml: |
+    version: 1
+    # disable_existing_loggers: true
+    handlers:
+      console:
+        class: log.PlainStreamHandler
+        level: INFO
+        stream: ext://sys.stdout
+    loggers:
+      "":
+        handlers:
+        - console
+        level: INFO
+        propogate: yes
+      uvicorn:
+        level: INFO
 ---
 apiVersion: v1
 kind: Service
