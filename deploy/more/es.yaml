@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: es
+  namespace: tyfun-monitoring
+spec:
+  ports:
+    - port: 9200
+  type: ExternalName
+  externalName: stage.ty.oz.net.ru
+

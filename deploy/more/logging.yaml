@@ -1,0 +1,27 @@
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: ClusterOutput
+metadata:
+  name: es
+  namespace: cattle-logging-system
+spec:
+  elasticsearch:
+    default_elasticsearch_version: "7"
+    host: stage.ty.oz.net.ru
+    port: 9200
+    scheme: http
+    user: elastic
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: elastic-user
+          key: elastic
+---
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: ClusterFlow
+metadata:
+  name: all-logs
+  namespace: cattle-logging-system
+spec:
+  globalOutputRefs:
+  - es
+
