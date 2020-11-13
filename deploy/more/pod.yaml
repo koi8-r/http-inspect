@@ -6,7 +6,7 @@ metadata:
   labels:
     app: http-inspect
 spec:
-  nodeName: tyfun-k3s-m1
+  nodeName: typhoon-k3s-m1
   restartPolicy: Always
   containers:
   - name: http-inspect

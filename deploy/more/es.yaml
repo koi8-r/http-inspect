@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: es
-  namespace: tyfun-monitoring
+  namespace: typhoon-monitoring
 spec:
   ports:
     - port: 9200
