@@ -111,9 +111,9 @@ metadata:
     # kubernetes.io/tls-acme: "true"
     # cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
-  backend:
-    serviceName: http-inspect
-    servicePort: 80
+  # backend:
+  #   serviceName: http-inspect
+  #   servicePort: 80
   tls:
   - hosts:
     - http-inspect.typhoon.oz.net.ru
