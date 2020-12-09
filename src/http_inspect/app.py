@@ -1,19 +1,17 @@
 from fastapi import FastAPI, Request
-import logging, log, yaml
-
+import logging, yaml
 
 
 try:
     with open('conf/logging.yaml', 'rt') as f:
         data = yaml.load(f, yaml.Loader)
         logging.config.dictConfig(data)
-except:
+except FileNotFoundError:
     pass
 
 
-
 app = FastAPI()
-LOG = logging.getLogger(__name__)
+LOG = logging.LoggerAdapter(logging.getLogger(__name__), extra=dict(component='app'))
 
 
 @app.get('/')
