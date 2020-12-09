@@ -1,0 +1,108 @@
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: Output
+metadata:
+  name: http-inspect-loki
+  namespace: default
+spec:
+  loki:
+    url: http://loki.tyfun-monitoring:3100
+    configure_kubernetes_labels: true
+    # extract_kubernetes_labels: true
+    line_format: key_value
+    buffer:
+      # Default is 10m
+      timekey: 1m
+      timekey_wait: 30s
+      timekey_use_utc: true
+    labels:
+      module: module
+      level: level
+      component: component
+    # extra_labels:
+    #   __name__: $.app  # cluster1.${namespace_name}.${pod_name}.${labels.app} ${$.kubernetes.labels.tenant}
+---
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: Output
+metadata:
+  name: http-inspect-es
+  namespace: default
+spec:
+  elasticsearch:
+    index_name: http-inspect
+    default_elasticsearch_version: "7"
+    host: 78.46.81.238
+    port: 9200
+    scheme: http
+    user: elastic
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: elastic-user
+          key: elastic
+    log_es_400_reason: true
+    id_key: log_id
+    # logstash_format: true
+    # pipeline:
+---
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: Flow
+metadata:
+  name: http-inspect-ignore
+  namespace: default
+spec:
+  localOutputRefs:
+    - http-inspect-es
+  match:
+    - select:
+        labels:
+          app: http-inspect
+          typhoon.gotrg.com/component: ignore
+  filters:
+    - tag_normaliser: {}
+    - parser:
+        # key_name: message
+        remove_key_name_field: false
+        reserve_data: true
+        parse:
+          type: regexp
+          # keep_time_key: true
+          expression: |
+            /^(?<evtime>[^\s]+) \[(?<level>[^\]]+)\] (?<module>.+?):\d+ - log_id=(?<log_id>[^\s]+) host_name=(?<hostname>[^\s]+) > (?<message>.*)$/
+          time_format: '%Y-%m-%dT%H:%M:%S.%N%z'
+          # time_key: time
+          utc: true
+          types: line:integer
+---
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: Flow
+metadata:
+  name: http-inspect
+  namespace: default
+spec:
+  localOutputRefs:
+  - http-inspect-loki
+  - http-inspect-es
+  match:
+    - select:
+        labels:
+          app: http-inspect
+  filters:
+    # - stdout: {}
+    - tag_normaliser: {}
+    - parser:
+        remove_key_name_field: true
+        reserve_data: true
+        parse:
+          # type: ltsv
+          type: logfmt
+          time_format: '%Y-%m-%dT%H:%M:%S%z'
+          delimiter_pattern: |
+            /\s+/
+          label_delimiter: '='
+    - record_transformer:
+        enable_ruby: true
+        records:
+        - "@timestamp": "${time.strftime('%Y-%m-%dT%H:%M:%S%z')}"
+    - dedot:
+        de_dot_nested: true
+

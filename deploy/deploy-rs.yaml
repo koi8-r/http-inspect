@@ -27,6 +27,9 @@ spec:
         app: http-inspect
         app.kubernetes.io/name: http-inspect
     spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       volumes:
       - name: http-inspect-logs
         persistentVolumeClaim:
@@ -64,12 +67,27 @@ metadata:
 data:
   logging.yaml: |
     version: 1
-    # disable_existing_loggers: true
+    disable_existing_loggers: true
+    formatters:
+      ty:
+        class: log.PlainFormatter
+        datefmt: |-
+          %Y-%m-%dT%H:%M:%S%z
+        format: >-
+          event_time=%(asctime)s
+          level=%(levelname)s
+          module=%(name)s
+          line=%(lineno)d
+          log_id=%(log_id)s
+          component=%(component)s
+          hostname=%(hostname)s
+          message=%(message)r
     handlers:
       console:
         class: log.PlainStreamHandler
         level: INFO
-        stream: ext://sys.stdout
+        stream: ext://sys.stderr
+        formatter: ty
     loggers:
       "":
         handlers:
@@ -110,6 +128,9 @@ metadata:
 
     # kubernetes.io/tls-acme: "true"
     # cert-manager.io/cluster-issuer: letsencrypt-prod
+    ingress.kubernetes.io/auth-type: basic
+    ingress.kubernetes.io/auth-realm: traefik
+    ingress.kubernetes.io/auth-secret: secret
 spec:
   # backend:
   #   serviceName: http-inspect
@@ -119,85 +140,11 @@ spec:
     - http-inspect.typhoon.oz.net.ru
     secretName: tls-http-inspect-ingress
   rules:
-  - host: http-inspect.typhoon.oz.net.ru
+  - host: http-inspect.oz.net.ru
     http:
       paths:
       - backend:
           serviceName: http-inspect
           servicePort: 80
         pathType: ImplementationSpecific
----
-# https://banzaicloud.com/docs/one-eye/logging-operator/crds/v1beta1/flow_types/#filter
-# https://banzaicloud.com/docs/one-eye/logging-operator/plugins/filters/
-# https://github.com/banzaicloud/logging-operator/blob/master/config/crd/bases/logging.banzaicloud.io_outputs.yaml
-# https://github.com/banzaicloud/logging-operator/blob/master/config/crd/bases/logging.banzaicloud.io_flows.yaml
-apiVersion: logging.banzaicloud.io/v1beta1
-kind: Output
-metadata:
-  name: http-inspect-logs
-  namespace: default
-spec:
-  loki:
-    url: http://loki.typhoon-monitoring:3100
-    configure_kubernetes_labels: true
-    extract_kubernetes_labels: true
-    line_format: key_value
-    labels:
-      module: module
-      level: level
----
-apiVersion: logging.banzaicloud.io/v1beta1
-kind: Output
-metadata:
-  name: http-inspect-eslogs
-  namespace: default
-spec:
-  elasticsearch:
-    default_elasticsearch_version: "7"
-    # id_key: log_id
-    # include_timestamp: true
-    # index_name: typhoon
-    # reconnect_on_error: true
-    # reload_on_failure: true
-    # request_timeout: 15s
-    ## reload_connections: false
-    ## rollover_index: true
-    ## suppress_type_name: true
-    host: stage.ty.oz.net.ru
-    port: 9200
-    scheme: http
-    user: elastic
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: elastic-user
-          key: elastic
----
-apiVersion: logging.banzaicloud.io/v1beta1
-kind: Flow
-metadata:
-  name: http-inspect-logs
-  namespace: default
-spec:
-  localOutputRefs:
-  - http-inspect-logs
-  - http-inspect-eslogs
-  match:
-  - select:
-      labels:
-        # app.kubernetes.io/name: http-inspect
-        app: http-inspect
-  filters:
-  - tag_normaliser: {}
-  - parser:
-      remove_key_name_field: true
-      reserve_data: true
-      parse:
-        type: regexp
-        expression: /^(?<time>[^\s]+) \[(?<level>[^\]]+)\] (?<module>.+?):\d+ - log_id=(?<log_id>[^\s]+) host_name=(?<hostname>[^\s]+) > (?<message>.*)$/
-        time_key: time
-        time_type: string
-        time_format: "%Y-%m-%dT%H:%M:%S.%N%z"
-        # utc: true
----
 

@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: elastic-user
+  namespace: cattle-logging-system
+type: Opaque
+data:
+  accessKey: ZWxhc3RpYw==
+  elastic: eW9oZjFWb2g=
+  secretKey: eW9oZjFWb2g=
+---
 apiVersion: logging.banzaicloud.io/v1beta1
 kind: ClusterOutput
 metadata:
@@ -6,7 +17,8 @@ metadata:
 spec:
   elasticsearch:
     default_elasticsearch_version: "7"
-    host: stage.ty.oz.net.ru
+    # host: stage.ty.oz.net.ru
+    host: 78.46.81.238
     port: 9200
     scheme: http
     user: elastic
