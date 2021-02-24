@@ -1,0 +1,5 @@
+{
+    "python.pythonPath": "venv/bin/python",
+    "FSharp.suggestGitignore": false,
+    "FSharp.suggestSdkScripts": false
+}
